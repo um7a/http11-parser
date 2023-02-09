@@ -1,4 +1,4 @@
-module github.com/um7a/http-parser
+module github.com/um7a/http11-parser
 
 go 1.19
 
