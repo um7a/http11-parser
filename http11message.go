@@ -19,43 +19,40 @@ type FieldLine struct {
 func marshalFieldLines(data []byte) (fieldLines []FieldLine, remaining []byte, err error) {
 	fieldLines = []FieldLine{}
 	remaining = data
+	var fieldName []byte
+	var fieldValue []byte
+	var colon []byte
+	var crlf []byte
 
 	for {
-		fieldLineEnds := FindFieldLine(remaining)
-		if len(fieldLineEnds) == 0 {
+		found, _ := NewFieldLineFinder().Find(remaining)
+		if !found {
 			break
 		}
 
 		// field-name
-		result := abnfp.ParseLongest(remaining, FindFieldName)
-		if len(result.Parsed) == 0 {
+		fieldName, remaining = abnfp.Parse(remaining, NewFieldNameFinder())
+		if len(fieldName) == 0 {
 			return fieldLines, data, errors.New("field-name not found")
 		}
-		fieldName := result.Parsed
-		remaining = result.Remaining
 
 		// ":"
-		result = abnfp.ParseShortest(remaining, abnfp.NewFindByte(':'))
-		if len(result.Parsed) == 0 {
+		colon, remaining = abnfp.Parse(remaining, abnfp.NewByteFinder(':'))
+		if len(colon) == 0 {
 			return fieldLines, data, errors.New("\":\" after field-name not found")
 		}
-		remaining = result.Remaining
 
 		// OWS
-		result = abnfp.ParseLongest(remaining, FindOws)
-		remaining = result.Remaining
+		_, remaining = abnfp.Parse(remaining, NewOwsFinder())
 
 		// field-value
-		result = abnfp.ParseLongest(remaining, FindFieldValue)
-		if len(result.Parsed) == 0 {
+		fieldValue, remaining = abnfp.Parse(remaining, NewFieldValueFinder())
+		if len(fieldValue) == 0 {
 			return fieldLines, data, errors.New("field-value not found")
 		}
-		fieldValue := result.Parsed
-		remaining = result.Remaining
 
 		// OWS
-		result = abnfp.ParseLongest(remaining, FindOws)
-		remaining = result.Remaining
+		_, remaining = abnfp.Parse(remaining, NewOwsFinder())
 
 		fieldLines = append(
 			fieldLines,
@@ -63,11 +60,10 @@ func marshalFieldLines(data []byte) (fieldLines []FieldLine, remaining []byte, e
 		)
 
 		// CRLF
-		result = abnfp.ParseShortest(remaining, abnfp.FindCrLf)
-		if len(result.Parsed) == 0 {
+		crlf, remaining = abnfp.Parse(remaining, abnfp.NewCrLfFinder())
+		if len(crlf) == 0 {
 			return fieldLines, data, errors.New("CRLF after field-line not found")
 		}
-		remaining = result.Remaining
 	}
 
 	return

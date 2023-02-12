@@ -17,38 +17,30 @@ type Http11Response struct {
 func marshalStatusLine(data []byte, resp *Http11Response) (remaining []byte, err error) {
 	remaining = data
 
-	result := abnfp.ParseLongest(remaining, FindHttpVersion)
-	if len(result.Parsed) == 0 {
+	resp.HttpVersion, remaining = abnfp.Parse(remaining, NewHttpVersionFinder())
+	if len(resp.HttpVersion) == 0 {
 		return data, errors.New("http-version not found")
 	}
-	resp.HttpVersion = result.Parsed
-	remaining = result.Remaining
 
-	result = abnfp.ParseLongest(remaining, abnfp.FindSp)
-	if len(result.Parsed) == 0 {
+	sp, remaining := abnfp.Parse(remaining, abnfp.NewSpFinder())
+	if len(sp) == 0 {
 		return data, errors.New("SP after http-version not found")
 	}
-	remaining = result.Remaining
 
-	result = abnfp.ParseLongest(remaining, FindStatusCode)
-	if len(result.Parsed) == 0 {
+	resp.StatusCode, remaining = abnfp.Parse(remaining, NewStatusCodeFinder())
+	if len(resp.StatusCode) == 0 {
 		return data, errors.New("status-code not found")
 	}
-	resp.StatusCode = result.Parsed
-	remaining = result.Remaining
 
-	result = abnfp.ParseLongest(remaining, abnfp.FindSp)
-	if len(result.Parsed) == 0 {
+	sp, remaining = abnfp.Parse(remaining, abnfp.NewSpFinder())
+	if len(sp) == 0 {
 		return data, errors.New("SP after status-code not found")
 	}
-	remaining = result.Remaining
 
-	result = abnfp.ParseLongest(remaining, FindReasonPhrase)
-	if len(result.Parsed) == 0 {
+	resp.ReasonPhrase, remaining = abnfp.Parse(remaining, NewReasonPhraseFinder())
+	if len(resp.ReasonPhrase) == 0 {
 		return data, errors.New("reason-phrase not found")
 	}
-	resp.ReasonPhrase = result.Parsed
-	remaining = result.Remaining
 
 	return
 }
@@ -62,21 +54,21 @@ func (resp *Http11Response) Marshal(data []byte) (err error) {
 		return err
 	}
 
-	result = abnfp.ParseShortest(remaining, abnfp.FindCrLf)
-	if len(result.Parsed) == 0 {
+	crlf, remaining := abnfp.Parse(remaining, abnfp.NewCrLfFinder())
+	if len(crlf) == 0 {
 		return errors.New("CRLF after request-line not found")
 	}
-	remaining = result.Remaining
 
 	resp.FieldLines, remaining, err = marshalFieldLines(remaining)
 	if err != nil {
 		return err
 	}
 
-	result = abnfp.ParseShortest(remaining, abnfp.FindCrLf)
-	if len(result.Parsed) == 0 {
+	crlf, remaining = abnfp.Parse(remaining, abnfp.NewCrLfFinder())
+	if len(crlf) == 0 {
 		return errors.New("CRLF before message-body not found")
 	}
+
 	resp.MessageBody = result.Remaining
 	return nil
 }

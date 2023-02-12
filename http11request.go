@@ -2,6 +2,7 @@ package http11p
 
 import (
 	"errors"
+	"fmt"
 
 	abnfp "github.com/um7a/abnf-parser"
 )
@@ -17,44 +18,35 @@ type Http11Request struct {
 func marshalRequestLine(data []byte, req *Http11Request) (remaining []byte, err error) {
 	remaining = data
 
-	result := abnfp.ParseLongest(remaining, FindMethod)
-	if len(result.Parsed) == 0 {
+	req.Method, remaining = abnfp.Parse(remaining, NewMethodFinder())
+	if len(req.Method) == 0 {
 		return data, errors.New("method not found")
 	}
-	req.Method = result.Parsed
-	remaining = result.Remaining
 
-	result = abnfp.ParseLongest(remaining, abnfp.FindSp)
-	if len(result.Parsed) == 0 {
+	sp, remaining := abnfp.Parse(remaining, abnfp.NewSpFinder())
+	if len(sp) == 0 {
 		return data, errors.New("SP after method not found")
 	}
-	remaining = result.Remaining
 
-	result = abnfp.ParseLongest(remaining, FindRequestTarget)
-	if len(result.Parsed) == 0 {
+	req.RequestTarget, remaining = abnfp.Parse(remaining, NewRequestTargetFinder())
+	if len(req.RequestTarget) == 0 {
 		return data, errors.New("request-target not found")
 	}
-	req.RequestTarget = result.Parsed
-	remaining = result.Remaining
 
-	result = abnfp.ParseLongest(remaining, abnfp.FindSp)
-	if len(result.Parsed) == 0 {
+	sp, remaining = abnfp.Parse(remaining, abnfp.NewSpFinder())
+	if len(sp) == 0 {
 		return data, errors.New("SP after request-target not found")
 	}
-	remaining = result.Remaining
 
-	result = abnfp.ParseLongest(remaining, FindHttpVersion)
-	if len(result.Parsed) == 0 {
+	req.HttpVersion, remaining = abnfp.Parse(remaining, NewHttpVersionFinder())
+	if len(req.HttpVersion) == 0 {
 		return data, errors.New("http-version not found")
 	}
-	req.HttpVersion = result.Parsed
-	remaining = result.Remaining
 
 	return
 }
 
 func (req *Http11Request) Marshal(data []byte) (err error) {
-	var result abnfp.ParseResult
 	remaining := data
 
 	remaining, err = marshalRequestLine(remaining, req)
@@ -62,22 +54,22 @@ func (req *Http11Request) Marshal(data []byte) (err error) {
 		return err
 	}
 
-	result = abnfp.ParseShortest(remaining, abnfp.FindCrLf)
-	if len(result.Parsed) == 0 {
+	crlf, remaining := abnfp.Parse(remaining, abnfp.NewCrLfFinder())
+	if len(crlf) == 0 {
 		return errors.New("CRLF after request-line not found")
 	}
-	remaining = result.Remaining
 
 	req.FieldLines, remaining, err = marshalFieldLines(remaining)
 	if err != nil {
 		return err
 	}
+	fmt.Printf("%s\n", remaining)
 
-	result = abnfp.ParseShortest(remaining, abnfp.FindCrLf)
-	if len(result.Parsed) == 0 {
+	crlf, remaining = abnfp.Parse(remaining, abnfp.NewCrLfFinder())
+	if len(crlf) == 0 {
 		return errors.New("CRLF before message-body not found")
 	}
-	req.MessageBody = result.Remaining
+	req.MessageBody = remaining
 	return nil
 }
 

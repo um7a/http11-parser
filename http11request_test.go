@@ -170,6 +170,7 @@ func TestHttp11RequestMarshal(t *testing.T) {
 			data: []byte(
 				"POST / HTTP/1.1\r\n" +
 					"Content-Length: 7\r\n" +
+					"Content-Type: application/x-www-form-urlencoded\r\n" +
 					"\r\n" +
 					"abcdefg",
 			),
@@ -179,6 +180,7 @@ func TestHttp11RequestMarshal(t *testing.T) {
 			expectedHttpVersion:   []byte("HTTP/1.1"),
 			expectedFieldLines: []FieldLine{
 				{FieldName: []byte("Content-Length"), FieldValue: []byte("7")},
+				{FieldName: []byte("Content-Type"), FieldValue: []byte("application/x-www-form-urlencoded")},
 			},
 			expectedMessageBody: []byte("abcdefg"),
 		},

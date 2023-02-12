@@ -6,7 +6,11 @@ github.com/um7a/abnf-parser v0.0.6 h1:nJIwnQkQhdSyzqIv6MUGezv8aV7gr5oHoGiYVvBJku
 github.com/um7a/abnf-parser v0.0.6/go.mod h1:ewms1KU6vfUFRPLdvlUAWIWEvtmiAl4A31zGCrkXRrk=
 github.com/um7a/abnf-parser v0.2.5 h1:oTFZLXFTEURL5IIq6/5uWVrBysSeWckwp6HhYkMbfyQ=
 github.com/um7a/abnf-parser v0.2.5/go.mod h1:ewms1KU6vfUFRPLdvlUAWIWEvtmiAl4A31zGCrkXRrk=
+github.com/um7a/abnf-parser v0.3.3 h1:MR2f91rMpbaiZsHYqUhL8Hic0my3SPDJN1RcPjtfhFQ=
+github.com/um7a/abnf-parser v0.3.3/go.mod h1:ewms1KU6vfUFRPLdvlUAWIWEvtmiAl4A31zGCrkXRrk=
 github.com/um7a/uri-parser v0.0.2 h1:Tg6rAI7ndsK4HYA0sZqUAeS9m3UbY+rRHaTGgtUYVkc=
 github.com/um7a/uri-parser v0.0.2/go.mod h1:DhaMnXTiqm8C6esGWGHWE1vDWNaxnJKjXxjlyoAMrew=
 github.com/um7a/uri-parser v0.0.4 h1:xx7fTu04AmJ2p0p5puj372yl5HgcMWaDTWvdac+OTxg=
 github.com/um7a/uri-parser v0.0.4/go.mod h1:57U3g4QezNmjeFJ464rTECEYWD08/wZIOIgO2eN60GI=
+github.com/um7a/uri-parser v0.0.5 h1:NiGbyjNUVaXERnP5l+NSppeIr+JjBGOWAU6EpupvDvA=
+github.com/um7a/uri-parser v0.0.5/go.mod h1:V437gZXpwlGg8T1r3YJOpHP0YTdR6GCTs+VWJ3GgvHE=

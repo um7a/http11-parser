@@ -10,8 +10,8 @@ import (
 //  uri-host      = <host, see [URI], Section 3.2.2>
 //
 
-func FindUriHost(data []byte) []int {
-	return urip.FindHost(data)
+func NewUriHostFinder() abnfp.Finder {
+	return urip.NewHostFinder()
 }
 
 // RFC9110 - 4.1. URI References
@@ -19,15 +19,14 @@ func FindUriHost(data []byte) []int {
 //  absolute-path = 1*( "/" segment )
 //
 
-func FindAbsolutePath(data []byte) []int {
-	findAbsolutePath := abnfp.NewFindVariableRepetitionMin(
+func NewAbsolutePathFinder() abnfp.Finder {
+	return abnfp.NewVariableRepetitionMinFinder(
 		1,
-		abnfp.NewFindConcatenation([]abnfp.FindFunc{
-			abnfp.NewFindByte('/'),
-			urip.FindSegment,
+		abnfp.NewConcatenationFinder([]abnfp.Finder{
+			abnfp.NewByteFinder('/'),
+			urip.NewSegmentFinder(),
 		}),
 	)
-	return findAbsolutePath(data)
 }
 
 // RFC9110 - 5.1. Field Names
@@ -35,8 +34,8 @@ func FindAbsolutePath(data []byte) []int {
 //  field-name     = token
 //
 
-func FindFieldName(data []byte) []int {
-	return FindToken(data)
+func NewFieldNameFinder() abnfp.Finder {
+	return NewTokenFinder()
 }
 
 // RFC9110 - 5.5. Field Values
@@ -44,8 +43,8 @@ func FindFieldName(data []byte) []int {
 //  field-value    = *field-content
 //
 
-func FindFieldValue(data []byte) []int {
-	return abnfp.NewFindVariableRepetition(FindFieldContent)(data)
+func NewFieldValueFinder() abnfp.Finder {
+	return abnfp.NewVariableRepetitionFinder(NewFieldContentFinder())
 }
 
 // RFC9110 - 5.5. Field Values
@@ -54,23 +53,22 @@ func FindFieldValue(data []byte) []int {
 //  								 [ 1*( SP / HTAB / field-vchar ) field-vchar ]
 //
 
-func FindFieldContent(data []byte) []int {
-	findFieldContent := abnfp.NewFindConcatenation([]abnfp.FindFunc{
-		FindFieldVChar,
-		abnfp.NewFindOptionalSequence(
-			abnfp.NewFindConcatenation([]abnfp.FindFunc{
-				abnfp.NewFindVariableRepetitionMin(1,
-					abnfp.NewFindAlternatives([]abnfp.FindFunc{
-						abnfp.FindSp,
-						abnfp.FindHTab,
-						FindFieldVChar,
+func NewFieldContentFinder() abnfp.Finder {
+	return abnfp.NewConcatenationFinder([]abnfp.Finder{
+		NewFieldVCharFinder(),
+		abnfp.NewOptionalSequenceFinder(
+			abnfp.NewConcatenationFinder([]abnfp.Finder{
+				abnfp.NewVariableRepetitionMinFinder(1,
+					abnfp.NewAlternativesFinder([]abnfp.Finder{
+						abnfp.NewSpFinder(),
+						abnfp.NewHTabFinder(),
+						NewFieldVCharFinder(),
 					}),
 				),
-				FindFieldVChar,
+				NewFieldVCharFinder(),
 			}),
 		),
 	})
-	return findFieldContent(data)
 }
 
 // RFC9110 - 5.5. Field Values
@@ -78,12 +76,11 @@ func FindFieldContent(data []byte) []int {
 //  field-vchar    = VCHAR / obs-text
 //
 
-func FindFieldVChar(data []byte) []int {
-	findFieldVChar := abnfp.NewFindAlternatives([]abnfp.FindFunc{
-		abnfp.FindVChar,
-		FindObsText,
+func NewFieldVCharFinder() abnfp.Finder {
+	return abnfp.NewAlternativesFinder([]abnfp.Finder{
+		abnfp.NewVCharFinder(),
+		NewObsTextFinder(),
 	})
-	return findFieldVChar(data)
 }
 
 // RFC9110 - 5.5. Field Values
@@ -91,8 +88,8 @@ func FindFieldVChar(data []byte) []int {
 //  obs-text       = %x80-FF
 //
 
-func FindObsText(data []byte) []int {
-	return abnfp.NewFindValueRangeAlternatives(0x80, 0xff)(data)
+func NewObsTextFinder() abnfp.Finder {
+	return abnfp.NewValueRangeAlternativesFinder(0x80, 0xff)
 }
 
 // RFC9110 - 5.6.2. Tokens
@@ -100,8 +97,8 @@ func FindObsText(data []byte) []int {
 // token          = 1*tchar
 //
 
-func FindToken(data []byte) []int {
-	return abnfp.NewFindVariableRepetitionMin(1, FindTChar)(data)
+func NewTokenFinder() abnfp.Finder {
+	return abnfp.NewVariableRepetitionMinFinder(1, NewTCharFinder())
 }
 
 // RFC9110 - 5.6.2. Tokens
@@ -112,27 +109,26 @@ func FindToken(data []byte) []int {
 //                 ; any VCHAR, except delimiters
 //
 
-func FindTChar(data []byte) []int {
-	findTChar := abnfp.NewFindAlternatives([]abnfp.FindFunc{
-		abnfp.NewFindBytes([]byte("!")),
-		abnfp.NewFindBytes([]byte("#")),
-		abnfp.NewFindBytes([]byte("$")),
-		abnfp.NewFindBytes([]byte("%")),
-		abnfp.NewFindBytes([]byte("&")),
-		abnfp.NewFindBytes([]byte("'")),
-		abnfp.NewFindBytes([]byte("*")),
-		abnfp.NewFindBytes([]byte("+")),
-		abnfp.NewFindBytes([]byte("-")),
-		abnfp.NewFindBytes([]byte(".")),
-		abnfp.NewFindBytes([]byte("^")),
-		abnfp.NewFindBytes([]byte("_")),
-		abnfp.NewFindBytes([]byte("`")),
-		abnfp.NewFindBytes([]byte("|")),
-		abnfp.NewFindBytes([]byte("~")),
-		abnfp.FindDigit,
-		abnfp.FindAlpha,
+func NewTCharFinder() abnfp.Finder {
+	return abnfp.NewAlternativesFinder([]abnfp.Finder{
+		abnfp.NewByteFinder('!'),
+		abnfp.NewByteFinder('#'),
+		abnfp.NewByteFinder('$'),
+		abnfp.NewByteFinder('%'),
+		abnfp.NewByteFinder('&'),
+		abnfp.NewByteFinder('\''),
+		abnfp.NewByteFinder('*'),
+		abnfp.NewByteFinder('+'),
+		abnfp.NewByteFinder('-'),
+		abnfp.NewByteFinder('.'),
+		abnfp.NewByteFinder('^'),
+		abnfp.NewByteFinder('_'),
+		abnfp.NewByteFinder('`'),
+		abnfp.NewByteFinder('|'),
+		abnfp.NewByteFinder('~'),
+		abnfp.NewDigitFinder(),
+		abnfp.NewAlphaFinder(),
 	})
-	return findTChar(data)
 }
 
 // RFC9110 - 5.6.3. Whitespace
@@ -141,14 +137,13 @@ func FindTChar(data []byte) []int {
 //  ; optional whitespace
 //
 
-func FindOws(data []byte) []int {
-	findOws := abnfp.NewFindVariableRepetition(
-		abnfp.NewFindAlternatives([]abnfp.FindFunc{
-			abnfp.FindSp,
-			abnfp.FindHTab,
+func NewOwsFinder() abnfp.Finder {
+	return abnfp.NewVariableRepetitionFinder(
+		abnfp.NewAlternativesFinder([]abnfp.Finder{
+			abnfp.NewSpFinder(),
+			abnfp.NewHTabFinder(),
 		}),
 	)
-	return findOws(data)
 }
 
 // RFC9110 - 5.6.3. Whitespace
@@ -157,15 +152,14 @@ func FindOws(data []byte) []int {
 //  ; required whitespace
 //
 
-func FindRws(data []byte) []int {
-	findOws := abnfp.NewFindVariableRepetitionMin(
+func NewRwsFinder() abnfp.Finder {
+	return abnfp.NewVariableRepetitionMinFinder(
 		1,
-		abnfp.NewFindAlternatives([]abnfp.FindFunc{
-			abnfp.FindSp,
-			abnfp.FindHTab,
+		abnfp.NewAlternativesFinder([]abnfp.Finder{
+			abnfp.NewSpFinder(),
+			abnfp.NewHTabFinder(),
 		}),
 	)
-	return findOws(data)
 }
 
 // RFC9110 - 5.6.3. Whitespace
@@ -174,8 +168,8 @@ func FindRws(data []byte) []int {
 //  ; "bad" whitespace
 //
 
-func FindBws(data []byte) []int {
-	return FindOws(data)
+func NewBwsFinder() abnfp.Finder {
+	return NewOwsFinder()
 }
 
 // RFC9110 - 5.6.4. Quoted Strings
@@ -183,18 +177,17 @@ func FindBws(data []byte) []int {
 //  quoted-string  = DQUOTE *( qdtext / quoted-pair ) DQUOTE
 //
 
-func FindQuotedString(data []byte) []int {
-	findQuotedString := abnfp.NewFindConcatenation([]abnfp.FindFunc{
-		abnfp.FindDQuote,
-		abnfp.NewFindVariableRepetition(
-			abnfp.NewFindAlternatives([]abnfp.FindFunc{
-				FindQdText,
-				FindQuotedPair,
+func NewQuotedStringFinder() abnfp.Finder {
+	return abnfp.NewConcatenationFinder([]abnfp.Finder{
+		abnfp.NewDQuoteFinder(),
+		abnfp.NewVariableRepetitionFinder(
+			abnfp.NewAlternativesFinder([]abnfp.Finder{
+				NewQdTextFinder(),
+				NewQuotedPairFinder(),
 			}),
 		),
-		abnfp.FindDQuote,
+		abnfp.NewDQuoteFinder(),
 	})
-	return findQuotedString(data)
 }
 
 // RFC9110 - 5.6.4. Quoted Strings
@@ -206,16 +199,15 @@ func FindQuotedString(data []byte) []int {
 // x21    : !
 // x23-5B : #, $, %, & ' ( ) * + , - . / 0-9, : ; < = > ? @ A-Z [
 // x5D-7E : ] ^ _ ` a-z { | } ~
-func FindQdText(data []byte) []int {
-	findQdText := abnfp.NewFindAlternatives([]abnfp.FindFunc{
-		abnfp.FindHTab,
-		abnfp.FindSp,
-		abnfp.NewFindByte(0x21),
-		abnfp.NewFindValueRangeAlternatives(0x23, 0x5b),
-		abnfp.NewFindValueRangeAlternatives(0x5d, 0x7e),
-		FindObsText,
+func NewQdTextFinder() abnfp.Finder {
+	return abnfp.NewAlternativesFinder([]abnfp.Finder{
+		abnfp.NewHTabFinder(),
+		abnfp.NewSpFinder(),
+		abnfp.NewByteFinder(0x21),
+		abnfp.NewValueRangeAlternativesFinder(0x23, 0x5b),
+		abnfp.NewValueRangeAlternativesFinder(0x5d, 0x7e),
+		NewObsTextFinder(),
 	})
-	return findQdText(data)
 }
 
 // RFC9110 - 5.6.4. Quoted Strings
@@ -223,17 +215,16 @@ func FindQdText(data []byte) []int {
 //  quoted-pair    = "\" ( HTAB / SP / VCHAR / obs-text )
 //
 
-func FindQuotedPair(data []byte) []int {
-	findQuotedPair := abnfp.NewFindConcatenation([]abnfp.FindFunc{
-		abnfp.NewFindByte('\\'),
-		abnfp.NewFindAlternatives([]abnfp.FindFunc{
-			abnfp.FindHTab,
-			abnfp.FindSp,
-			abnfp.FindVChar,
-			FindObsText,
+func NewQuotedPairFinder() abnfp.Finder {
+	return abnfp.NewConcatenationFinder([]abnfp.Finder{
+		abnfp.NewByteFinder('\\'),
+		abnfp.NewAlternativesFinder([]abnfp.Finder{
+			abnfp.NewHTabFinder(),
+			abnfp.NewSpFinder(),
+			abnfp.NewVCharFinder(),
+			NewObsTextFinder(),
 		}),
 	})
-	return findQuotedPair(data)
 }
 
 // RFC9112 - 2.1. Message Format
@@ -244,20 +235,19 @@ func FindQuotedPair(data []byte) []int {
 //                   [ message-body ]
 //
 
-func FindHttpMessage(data []byte) []int {
-	findHttpMessage := abnfp.NewFindConcatenation([]abnfp.FindFunc{
-		FindStartLine,
-		abnfp.FindCrLf,
-		abnfp.NewFindVariableRepetition(
-			abnfp.NewFindConcatenation([]abnfp.FindFunc{
-				FindFieldLine,
-				abnfp.FindCrLf,
+func NewHttpMessageFinder() abnfp.Finder {
+	return abnfp.NewConcatenationFinder([]abnfp.Finder{
+		NewStartLineFinder(),
+		abnfp.NewCrLfFinder(),
+		abnfp.NewVariableRepetitionFinder(
+			abnfp.NewConcatenationFinder([]abnfp.Finder{
+				NewFieldLineFinder(),
+				abnfp.NewCrLfFinder(),
 			}),
 		),
-		abnfp.FindCrLf,
-		abnfp.NewFindOptionalSequence(FindMessageBody),
+		abnfp.NewCrLfFinder(),
+		abnfp.NewOptionalSequenceFinder(NewMessageBodyFinder()),
 	})
-	return findHttpMessage(data)
 }
 
 // RFC9112 - 2.1. Message Format
@@ -265,12 +255,11 @@ func FindHttpMessage(data []byte) []int {
 //  start-line     = request-line / status-line
 //
 
-func FindStartLine(data []byte) []int {
-	findStartLine := abnfp.NewFindAlternatives([]abnfp.FindFunc{
-		FindRequestLine,
-		FindStatusLine,
+func NewStartLineFinder() abnfp.Finder {
+	return abnfp.NewAlternativesFinder([]abnfp.Finder{
+		NewRequestLineFinder(),
+		NewStatusLineFinder(),
 	})
-	return findStartLine(data)
 }
 
 // RFC9112 - 2.3. HTTP Version
@@ -278,15 +267,14 @@ func FindStartLine(data []byte) []int {
 //  HTTP-version  = HTTP-name "/" DIGIT "." DIGIT
 //
 
-func FindHttpVersion(data []byte) []int {
-	findHttpVersion := abnfp.NewFindConcatenation([]abnfp.FindFunc{
-		FindHttpName,
-		abnfp.NewFindBytes([]byte("/")),
-		abnfp.FindDigit,
-		abnfp.NewFindBytes([]byte(".")),
-		abnfp.FindDigit,
+func NewHttpVersionFinder() abnfp.Finder {
+	return abnfp.NewConcatenationFinder([]abnfp.Finder{
+		NewHttpNameFinder(),
+		abnfp.NewByteFinder('/'),
+		abnfp.NewDigitFinder(),
+		abnfp.NewByteFinder('.'),
+		abnfp.NewDigitFinder(),
 	})
-	return findHttpVersion(data)
 }
 
 // RFC9112 - 2.3. HTTP Version
@@ -294,8 +282,8 @@ func FindHttpVersion(data []byte) []int {
 //  HTTP-name     = %s"HTTP"
 //
 
-func FindHttpName(data []byte) []int {
-	return abnfp.NewFindBytes([]byte("HTTP"))(data)
+func NewHttpNameFinder() abnfp.Finder {
+	return abnfp.NewBytesFinder([]byte("HTTP"))
 }
 
 // RFC9112 - 3. Request Line
@@ -303,15 +291,14 @@ func FindHttpName(data []byte) []int {
 //  request-line   = method SP request-target SP HTTP-version
 //
 
-func FindRequestLine(data []byte) []int {
-	findRequestLine := abnfp.NewFindConcatenation([]abnfp.FindFunc{
-		FindMethod,
-		abnfp.FindSp,
-		FindRequestTarget,
-		abnfp.FindSp,
-		FindHttpVersion,
+func NewRequestLineFinder() abnfp.Finder {
+	return abnfp.NewConcatenationFinder([]abnfp.Finder{
+		NewMethodFinder(),
+		abnfp.NewSpFinder(),
+		NewRequestTargetFinder(),
+		abnfp.NewSpFinder(),
+		NewHttpVersionFinder(),
 	})
-	return findRequestLine(data)
 }
 
 // RFC9112 - 3.1. Method
@@ -319,8 +306,8 @@ func FindRequestLine(data []byte) []int {
 //  method         = token
 //
 
-func FindMethod(data []byte) []int {
-	return FindToken(data)
+func NewMethodFinder() abnfp.Finder {
+	return NewTokenFinder()
 }
 
 // RFC9112 - 3.2. Request Target
@@ -331,14 +318,13 @@ func FindMethod(data []byte) []int {
 //                 / asterisk-form
 //
 
-func FindRequestTarget(data []byte) []int {
-	findRequestTarget := abnfp.NewFindAlternatives([]abnfp.FindFunc{
-		FindOriginForm,
-		FindAbsoluteForm,
-		FindAuthorityForm,
-		FindAsteriskForm,
+func NewRequestTargetFinder() abnfp.Finder {
+	return abnfp.NewAlternativesFinder([]abnfp.Finder{
+		NewOriginFormFinder(),
+		NewAbsoluteFormFinder(),
+		NewAuthorityFormFinder(),
+		NewAsteriskFormFinder(),
 	})
-	return findRequestTarget(data)
 }
 
 // RFC9112 - 3.2.1. origin-form
@@ -346,17 +332,16 @@ func FindRequestTarget(data []byte) []int {
 //  origin-form    = absolute-path [ "?" query ]
 //
 
-func FindOriginForm(data []byte) []int {
-	findOriginForm := abnfp.NewFindConcatenation([]abnfp.FindFunc{
-		FindAbsolutePath,
-		abnfp.NewFindOptionalSequence(
-			abnfp.NewFindConcatenation([]abnfp.FindFunc{
-				abnfp.NewFindBytes([]byte("?")),
-				urip.FindQuery,
+func NewOriginFormFinder() abnfp.Finder {
+	return abnfp.NewConcatenationFinder([]abnfp.Finder{
+		NewAbsolutePathFinder(),
+		abnfp.NewOptionalSequenceFinder(
+			abnfp.NewConcatenationFinder([]abnfp.Finder{
+				abnfp.NewByteFinder('?'),
+				urip.NewQueryFinder(),
 			}),
 		),
 	})
-	return findOriginForm(data)
 }
 
 // RFC9112 - 3.2.2. absolute-form
@@ -364,8 +349,8 @@ func FindOriginForm(data []byte) []int {
 //  absolute-form  = absolute-URI
 //
 
-func FindAbsoluteForm(data []byte) []int {
-	return urip.FindAbsoluteUri(data)
+func NewAbsoluteFormFinder() abnfp.Finder {
+	return urip.NewAbsoluteUriFinder()
 }
 
 // RFC9112 - 3.2.3. authority-form
@@ -373,13 +358,12 @@ func FindAbsoluteForm(data []byte) []int {
 //  authority-form = uri-host ":" port
 //
 
-func FindAuthorityForm(data []byte) []int {
-	findAuthorityForm := abnfp.NewFindConcatenation([]abnfp.FindFunc{
-		FindUriHost,
-		abnfp.NewFindByte(':'),
-		urip.FindPort,
+func NewAuthorityFormFinder() abnfp.Finder {
+	return abnfp.NewConcatenationFinder([]abnfp.Finder{
+		NewUriHostFinder(),
+		abnfp.NewByteFinder(':'),
+		urip.NewPortFinder(),
 	})
-	return findAuthorityForm(data)
 }
 
 // RFC9112 - 3.2.4. asterisk-form
@@ -387,8 +371,8 @@ func FindAuthorityForm(data []byte) []int {
 //  asterisk-form  = "*"
 //
 
-func FindAsteriskForm(data []byte) []int {
-	return abnfp.NewFindByte('*')(data)
+func NewAsteriskFormFinder() abnfp.Finder {
+	return abnfp.NewByteFinder('*')
 }
 
 // RFC9112 - 4. Status Line
@@ -396,15 +380,14 @@ func FindAsteriskForm(data []byte) []int {
 //  status-line = HTTP-version SP status-code SP [ reason-phrase ]
 //
 
-func FindStatusLine(data []byte) []int {
-	findStatusLine := abnfp.NewFindConcatenation([]abnfp.FindFunc{
-		FindHttpVersion,
-		abnfp.FindSp,
-		FindStatusCode,
-		abnfp.FindSp,
-		abnfp.NewFindOptionalSequence(FindReasonPhrase),
+func NewStatusLineFinder() abnfp.Finder {
+	return abnfp.NewConcatenationFinder([]abnfp.Finder{
+		NewHttpVersionFinder(),
+		abnfp.NewSpFinder(),
+		NewStatusCodeFinder(),
+		abnfp.NewSpFinder(),
+		abnfp.NewOptionalSequenceFinder(NewReasonPhraseFinder()),
 	})
-	return findStatusLine(data)
 }
 
 // RFC9112 - 4. Status Line
@@ -412,8 +395,8 @@ func FindStatusLine(data []byte) []int {
 //  status-code    = 3DIGIT
 //
 
-func FindStatusCode(data []byte) []int {
-	return abnfp.NewFindSpecificRepetition(3, abnfp.FindDigit)(data)
+func NewStatusCodeFinder() abnfp.Finder {
+	return abnfp.NewSpecificRepetitionFinder(3, abnfp.NewDigitFinder())
 }
 
 // RFC9112 - 4. Status Line
@@ -421,17 +404,16 @@ func FindStatusCode(data []byte) []int {
 //  reason-phrase  = 1*( HTAB / SP / VCHAR / obs-text )
 //
 
-func FindReasonPhrase(data []byte) []int {
-	findReasonPhrase := abnfp.NewFindVariableRepetitionMin(
+func NewReasonPhraseFinder() abnfp.Finder {
+	return abnfp.NewVariableRepetitionMinFinder(
 		1,
-		abnfp.NewFindAlternatives([]abnfp.FindFunc{
-			abnfp.FindHTab,
-			abnfp.FindSp,
-			abnfp.FindVChar,
-			FindObsText,
+		abnfp.NewAlternativesFinder([]abnfp.Finder{
+			abnfp.NewHTabFinder(),
+			abnfp.NewSpFinder(),
+			abnfp.NewVCharFinder(),
+			NewObsTextFinder(),
 		}),
 	)
-	return findReasonPhrase(data)
 }
 
 // RFC9112 - 5. Field Syntax
@@ -439,15 +421,14 @@ func FindReasonPhrase(data []byte) []int {
 //  field-line   = field-name ":" OWS field-value OWS
 //
 
-func FindFieldLine(data []byte) []int {
-	findFieldLine := abnfp.NewFindConcatenation([]abnfp.FindFunc{
-		FindFieldName,
-		abnfp.NewFindByte(':'),
-		FindOws,
-		FindFieldValue,
-		FindOws,
+func NewFieldLineFinder() abnfp.Finder {
+	return abnfp.NewConcatenationFinder([]abnfp.Finder{
+		NewFieldNameFinder(),
+		abnfp.NewByteFinder(':'),
+		NewOwsFinder(),
+		NewFieldValueFinder(),
+		NewOwsFinder(),
 	})
-	return findFieldLine(data)
 }
 
 // RFC9112 - 6. Message Body
@@ -455,6 +436,6 @@ func FindFieldLine(data []byte) []int {
 //  message-body = *OCTET
 //
 
-func FindMessageBody(data []byte) []int {
-	return abnfp.NewFindVariableRepetition(abnfp.FindOctet)(data)
+func NewMessageBodyFinder() abnfp.Finder {
+	return abnfp.NewVariableRepetitionFinder(abnfp.NewOctetFinder())
 }
