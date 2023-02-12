@@ -2,7 +2,6 @@ package http11p
 
 import (
 	"errors"
-	"fmt"
 
 	abnfp "github.com/um7a/abnf-parser"
 )
@@ -63,7 +62,6 @@ func (req *Http11Request) Marshal(data []byte) (err error) {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("%s\n", remaining)
 
 	crlf, remaining = abnfp.Parse(remaining, abnfp.NewCrLfFinder())
 	if len(crlf) == 0 {
