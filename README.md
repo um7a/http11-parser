@@ -3,7 +3,7 @@
 ## Usage
 
 ```bash
-$ go get github.com/um7a/http11-parser@v0.0.4
+$ go get github.com/um7a/http11-parser@v0.0.5
 ```
 
 ### Http Request Parser
